@@ -1,8 +1,7 @@
 # T-PIE
 Thesis degree: Pedestrian Intention Estimation using stacked Transformers Encoders. This repo is inspired by the [SF-GRU](https://github.com/aras62/SF-GRU) model and **use it to generate the scene features**. 
 
-![alt text](https://github.com/ricardosc97/T-PIE/model.png?raw=true)
-
+![alt text](https://github.com/ricardosc97/T-PIE/blob/main/model.png?raw=true)
 ## Dependencies 
 This code is written and tested using: 
 
