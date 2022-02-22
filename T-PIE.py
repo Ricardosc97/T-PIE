@@ -1,11 +1,12 @@
-# potencial arquitectura 7
+# Pedestrian Intention Estimation using stacked Transformers Encoders
+# Ricardo Silva 
+# February 2022 
 class AttentionModel(pl.LightningModule):
     def __init__(self, train_dataset, test_dataset, batch_size = 32, learning_rate = 5e-6, feature_d_model = 1065):
         super().__init__()
         self.test_dataset = test_dataset
         self.train_dataset = train_dataset
         
-        # self.embedding =  torch.nn.Embedding(1065, embedding_dim=512)
 
         self.el_lvl_1 = nn.TransformerEncoderLayer(d_model=512, nhead=8, batch_first = True)
         self.te_lvl_1 = nn.TransformerEncoder(self.el_lvl_1, num_layers=2)
