@@ -1,7 +1,7 @@
 # Pedestrian Intention Estimation using stacked Transformers Encoders
 # Ricardo Silva 
 # February 2022 
-class AttentionModel(pl.LightningModule):
+class TPIE(pl.LightningModule):
     def __init__(self, train_dataset, test_dataset, batch_size = 32, learning_rate = 5e-6, feature_d_model = 1065):
         super().__init__()
         self.test_dataset = test_dataset
