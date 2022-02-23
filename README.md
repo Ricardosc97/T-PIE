@@ -18,7 +18,7 @@ And the code is trained and tested with [PIE](https://github.com/aras62/PIE) dat
 
 ## Train and Test
 
-As mentioned before, to run this model is required PIE and SF-GRU repos. A sample for generating dataset is provided below
+As mentioned before, to run this model is required PIE and SF-GRU repos; The train script is provided ```train.py```. A sample for generating dataset is provided below
 
 ```
 from fv import FeatureVectors
@@ -81,7 +81,7 @@ trainer = pl.Trainer(
     )
 ```
 
-It is proposed to add the MCC metric to the results. The output after testing the model showed below 
+It is proposed to add the MCC metric to the results, being one of the most balanced metric. The output after testing the model showed below 
 
 ```
 DATALOADER:0 TEST RESULTS
