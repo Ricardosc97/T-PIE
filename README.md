@@ -94,10 +94,16 @@ DATALOADER:0 TEST RESULTS
 ```
 
 ## Results 
-An article will be written showing the results in detail. For now, the table below shows the results obtained for an 0.5s observation length and 2s time to event.
+A Meidum article will be written showing the results in detail. For now, the table below shows the results obtained for an 0.5s observation length and 2s time to event.
 
 <p align="center">
   <img src="https://github.com/ricardosc97/T-PIE/blob/main/results.png?raw=true" title="hover text">
 </p>
+
+
+## Authors
+* [Ricardo Silva](https://www.linkedin.com/in/ricardosc11/) 
+
+Please refers to [Amir Rasouli](https://aras62.github.io/) and [Iuliia Kotseruba](https://ykotseruba.github.io/) authors of SF-GRU and PIE
 
 
