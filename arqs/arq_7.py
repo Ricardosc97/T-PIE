@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -12,14 +11,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-print("Device", device)
-class TPIE(pl.LightningModule):
+class AttentionModel(pl.LightningModule):
     def __init__(self, train_dataset, test_dataset, batch_size = 32, learning_rate = 5e-6, feature_d_model = 1065):
         super().__init__()
         self.test_dataset = test_dataset
         self.train_dataset = train_dataset
-        
 
         self.el_lvl_1 = nn.TransformerEncoderLayer(d_model=512, nhead=8, batch_first = True)
         self.te_lvl_1 = nn.TransformerEncoder(self.el_lvl_1, num_layers=2)
@@ -57,14 +53,10 @@ class TPIE(pl.LightningModule):
         self.y_auc = torch.tensor(()).to(device)
         self.pred_auc = torch.tensor(()).to(device)
 
-        self.save_hyperparameters(ignore=[
-            'train_dataset',
-            'test_dataset'
-        ])
+        
 
         # Metrics functions
         # Train Metrics
-        # es la probabilidad de que el clasificador binario pueda identificar correctamente dos muestras dadas una de valor positivo y una de valor negativo seleccionadas al azar.
         self.train_acc = torchmetrics.Accuracy()
         self.train_f1 = torchmetrics.F1()
         self.train_auc = torchmetrics.AUROC()
@@ -81,7 +73,10 @@ class TPIE(pl.LightningModule):
         self.test_mcc = torchmetrics.MatthewsCorrcoef(num_classes = 2)
 
         self.conf_matrix = torchmetrics.ConfusionMatrix(num_classes=2)
-
+        self.save_hyperparameters(ignore=[
+            'train_dataset',
+            'test_dataset'
+        ])
 
     
      # X shape: batch size, seq lenght, d model = 32, 14, 1065
@@ -140,8 +135,6 @@ class TPIE(pl.LightningModule):
         # Last frame 
         # last_frame = output_decoder[:,-1,:]
 
-        # print('output_decoder SHAPE', output_decoder.shape)
-        # print('FLAT SHAPE', flatted.shape)
         # FC
         output = self.fc(mean.float()).type_as(x)
         # Output

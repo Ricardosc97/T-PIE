@@ -1,30 +1,38 @@
 # T-PIE
-Pedestrian Intention Estimation using stacked Transformers Encoders. This model is inspired by the [SF-GRU](https://github.com/aras62/SF-GRU) model and **use it to generate the scene features**. 
+
+Pedestrian Intention Estimation using stacked Transformers Encoders. This model
+is inspired by the [SF-GRU](https://github.com/aras62/SF-GRU) model and **use it
+to generate the scene features**.
 
 <p align="center">
   <img src="https://github.com/ricardosc97/T-PIE/blob/main/model.png?raw=true" title="hover text">
 </p>
 
-## Dependencies 
-This code is written and tested using: 
+## Dependencies
 
-* Python 3.6.9
-* Numpy 1.19.5
-* Pytorch 1.9.1
-* Pytorch Lightning 1.4.9
-* CUDA 10.2
+This code is written and tested using:
 
-And the code is trained and tested with [PIE](https://github.com/aras62/PIE) dataset. The [SF-GRU](https://github.com/aras62/SF-GRU) is required to train the model. 
+- Python 3.6.9
+- Numpy 1.19.5
+- Pytorch 1.9.1
+- Pytorch Lightning 1.4.9
+- CUDA 10.2
+
+And the code is trained and tested with [PIE](https://github.com/aras62/PIE)
+dataset. The [SF-GRU](https://github.com/aras62/SF-GRU) is required to train the
+model.
 
 ## Train and Test
 
-As mentioned before, to run this model is required PIE and SF-GRU repos; The train script is provided ```train.py```. A sample for generating dataset is provided below
+As mentioned before, to run this model is required PIE and SF-GRU repos; The
+train script is provided `train.py`. A sample for generating dataset is provided
+below
 
 ```
 from fv import FeatureVectors
 from sf_gru import SFGRU
 from pie_data import PIE
-from t_pie import TPIE 
+from t_pie import TPIE
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 
@@ -46,14 +54,15 @@ test_val_data, data_types, data_sizes = method_class.get_data({'test': beh_seq_t
 train_dataset = FeatureVectors(train_val_data['train'], 'train')
 test_dataset = FeatureVectors(test_val_data['test'], 'test', normalization=False)
 ```
-Then prepare the model and use the `pl.Trainer()` Class. 
+
+Then prepare the model and use the `pl.Trainer()` Class.
 
 ```
 model = TPIE(train_dataset, test_dataset)
 
 trainer = pl.Trainer(
     gpus=-1,
-    auto_lr_find = True, 
+    auto_lr_find = True,
     max_epochs=90
     )
 
@@ -62,7 +71,7 @@ trainer.fit(model)
 trainer.test(model)
 ```
 
-Using callbacks is optional 
+Using callbacks is optional
 
 ```
 checkpoint_callback = ModelCheckpoint(
@@ -75,13 +84,14 @@ checkpoint_callback = ModelCheckpoint(
 
 trainer = pl.Trainer(
     gpus=-1,
-    auto_lr_find = True, 
+    auto_lr_find = True,
     max_epochs=90,
     callbacks=[checkpoint_callback]
     )
 ```
 
-It is proposed to add the MCC metric to the results, being one of the most balanced metric. The output after testing the model showed below 
+It is proposed to add the MCC metric to the results, being one of the most
+balanced metric. The output after testing the model showed below
 
 ```
 DATALOADER:0 TEST RESULTS
@@ -93,17 +103,24 @@ DATALOADER:0 TEST RESULTS
  'test_recall': 0.7532467246055603}
 ```
 
-## Results 
-A Meidum article will be written showing the results in detail. For now, the table below shows the results obtained for an 0.5s observation length and 2s time to event.
+## Results
+
+A Meidum article will be written showing the results in detail. For now, the
+table below shows the results obtained for an 0.5s observation length and 2s
+time to event.
 
 <p align="center">
   <img src="https://github.com/ricardosc97/T-PIE/blob/main/results.png?raw=true" title="hover text">
 </p>
 
+## Other models
+
+For academic purpose there are other models placed in the folder `/arqs`. Please
+send email to ricardosc1997@gmail.com if you want to know more about them.
 
 ## Authors
-* [Ricardo Silva](https://www.linkedin.com/in/ricardosc11/) 
 
-Please refers to [Amir Rasouli](https://aras62.github.io/) and [Iuliia Kotseruba](https://ykotseruba.github.io/) authors of SF-GRU and PIE
+- [Ricardo Silva](https://www.linkedin.com/in/ricardosc11/)
 
-
+Please refers to [Amir Rasouli](https://aras62.github.io/) and
+[Iuliia Kotseruba](https://ykotseruba.github.io/) authors of SF-GRU and PIE

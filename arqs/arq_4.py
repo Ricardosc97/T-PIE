@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -12,33 +11,52 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-print("Device", device)
-class TPIE(pl.LightningModule):
+
+class AttentionModel(pl.LightningModule):
     def __init__(self, train_dataset, test_dataset, batch_size = 32, learning_rate = 5e-6, feature_d_model = 1065):
         super().__init__()
         self.test_dataset = test_dataset
         self.train_dataset = train_dataset
+
+        self.transfomer_local_box = nn.Transformer(
+            d_model = 512, 
+            nhead=8,  
+            num_encoder_layers=6, 
+            num_decoder_layers=6, 
+            batch_first = True
+            )
+
+        self.transfomer_local_context = nn.Transformer(
+            d_model = 512, 
+            nhead=8,  
+            num_encoder_layers=6, 
+            num_decoder_layers=6, 
+            batch_first = True
+            )
+
+        self.transfomer_pose = nn.Transformer(
+            d_model = 36, 
+            nhead=4,  
+            num_encoder_layers=6, 
+            num_decoder_layers=6, 
+            batch_first = True
+            )
         
-
-        self.el_lvl_1 = nn.TransformerEncoderLayer(d_model=512, nhead=8, batch_first = True)
-        self.te_lvl_1 = nn.TransformerEncoder(self.el_lvl_1, num_layers=2)
+        self.transfomer_bbox = nn.Transformer(
+            d_model = 4, 
+            nhead=2,  
+            num_encoder_layers=6, 
+            num_decoder_layers=6, 
+            batch_first = True
+            )
         
-        self.el_lvl_2 = nn.TransformerEncoderLayer(d_model=1024, nhead=8, batch_first = True)
-        self.te_lvl_2 = nn.TransformerEncoder(self.el_lvl_2, num_layers=2)
-
-        self.el_lvl_3 = nn.TransformerEncoderLayer(d_model=1060, nhead=4, batch_first = True)
-        self.te_lvl_3 = nn.TransformerEncoder(self.el_lvl_3, num_layers=2)
-
-        self.el_lvl_4 = nn.TransformerEncoderLayer(d_model=1064, nhead=4, batch_first = True)
-        self.te_lvl_4 = nn.TransformerEncoder(self.el_lvl_4, num_layers=2)
-
-        self.encoder_layer = nn.TransformerEncoderLayer(d_model=1065, nhead=15, batch_first = True)
-        self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=2)
-
-        self.decoder_layer = nn.TransformerDecoderLayer(d_model = 1065,nhead=15, batch_first = True)
-        self.transformer_decoder = nn.TransformerDecoder(self.decoder_layer, num_layers = 3)
-
+        self.transfomer_speed = nn.Transformer(
+            d_model = 1, 
+            nhead=1,  
+            num_encoder_layers=6, 
+            num_decoder_layers=6, 
+            batch_first = True
+            )
 
         self.f_d_model = feature_d_model
 
@@ -56,12 +74,7 @@ class TPIE(pl.LightningModule):
 
         self.y_auc = torch.tensor(()).to(device)
         self.pred_auc = torch.tensor(()).to(device)
-
-        self.save_hyperparameters(ignore=[
-            'train_dataset',
-            'test_dataset'
-        ])
-
+        
         # Metrics functions
         # Train Metrics
         # es la probabilidad de que el clasificador binario pueda identificar correctamente dos muestras dadas una de valor positivo y una de valor negativo seleccionadas al azar.
@@ -81,74 +94,58 @@ class TPIE(pl.LightningModule):
         self.test_mcc = torchmetrics.MatthewsCorrcoef(num_classes = 2)
 
         self.conf_matrix = torchmetrics.ConfusionMatrix(num_classes=2)
+        self.save_hyperparameters(ignore=[
+            'train_dataset',
+            'test_dataset'
+        ])
 
 
     
      # X shape: batch size, seq lenght, d model = 32, 14, 1065
     def forward(self, x):
-        decoder_input_y =  x[:,1:,:]
-         # Transformer
-        
+        # Transformer
+
         # Separete inputs in x_input and y_input per feature for transformer
-        local_box = x[:,0:-1,0:512]
-        local_context = x[:,0:-1, 512:1024]
-        pose = x[:,0:-1,1024:1060]
-        bbox = x[:,0:-1,1060:1064]
-        speed = x[:,0:-1,1064:1065]
-
-        ### Lvl 1
-        # Transformers encoder
-        output_te_1 = self.te_lvl_1(local_box.float())
-
-        # Concatenation
-        input_te_2 = torch.cat((local_context, output_te_1), dim = 2).double().to(device)
+        local_box_x = x[:,0:-1,0:512]
+        local_box_y = x[:,1:,0:512]
         
-        ### Lvl 2
-        # Transformer encoder
-        output_te_2 = self.te_lvl_2(input_te_2.float())
+        local_context_x = x[:,0:-1,512:1024]
+        local_context_y = x[:,1:,512:1024]
         
-        # Concatenation
-        input_te_3  = torch.cat((pose, output_te_2), dim = 2).double().to(device)
+        pose_x = x[:,0:-1,1024:1060]
+        pose_y = x[:,1:,1024:1060]
         
-        ### Lvl 3
-        # Transformer encoder
-        output_te_3 = self.te_lvl_3(input_te_3.float())
+        bbox_x = x[:,0:-1,1060:1064]
+        bbox_y = x[:,1:,1060:1064]
         
-        # Concatenation
-        input_te_4 = torch.cat((bbox, output_te_3), dim = 2).double().to(device)
+        speed_x = x[:,0:-1,1064:1065]
+        speed_y = x[:,1:,1064:1065]
 
-        ### Lvl 4 
-        # Transformer encoder
-        output_te_4 = self.te_lvl_4(input_te_4.float())
+        # Transformers Outputs
+        t_local_box = self.transfomer_local_box(local_box_x.float(), local_box_y.float())
+        t_local_context = self.transfomer_local_context(local_context_x.float(), local_context_y.float())
+        t_pose = self.transfomer_pose(pose_x.float(), pose_y.float())
+        t_bbox = self.transfomer_bbox(bbox_x.float(), bbox_y.float())
+        t_speed = self.transfomer_speed(speed_x.float(), speed_y.float())
 
-        # Concatenation
-        input_te = torch.cat((speed, output_te_4), dim = 2).double().to(device)
-
-        ### Lvl 5 
-        # Transformer encoder (final)
-        decoder_input_x = self.transformer_encoder(input_te.float())
-
-        ### Transformer Decoder        
-        output_decoder = self.transformer_decoder(decoder_input_x.float(), decoder_input_y.float())
+        # Concatenate the transformers outputs along frames axis
+        t_output_concatenated = torch.cat((
+            t_local_box, 
+            t_local_context, 
+            t_pose, 
+            t_bbox, 
+            t_speed),             
+            dim = 2).double().to(device)
 
         # Mean across frames. Note that dim changes with batch size dim
-        mean = torch.mean(output_decoder, dim = 1).type_as(x)
-
-        # Flattening 
-        # flatted = torch.reshape(output_decoder, (x.shape[0],-1)).type_as(x)
-
-        # Last frame 
-        # last_frame = output_decoder[:,-1,:]
-
-        # print('output_decoder SHAPE', output_decoder.shape)
-        # print('FLAT SHAPE', flatted.shape)
+        mean = torch.mean(t_output_concatenated, dim = 1).type_as(x)
         # FC
         output = self.fc(mean.float()).type_as(x)
         # Output
         output = output.float().type_as(x)
         return output
 
-
+    
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate) 
         return optimizer
